@@ -1,7 +1,7 @@
-import os
+# import os
 import pytest
-from pathlib import Path
 import json
+from pathlib import Path
 
 from project.app import app, db
 
@@ -40,6 +40,17 @@ def test_index(client):
     assert response.status_code == 200
 
 
+def test_delete_message(client):
+    """Ensure the messages are being deleted"""
+    rv = client.get("/delete/1")
+    data = json.loads(rv.data)
+    assert data["status"] == 0
+    login(client, app.config["USERNAME"], app.config["PASSWORD"])
+    rv = client.get("/delete/1")
+    data = json.loads(rv.data)
+    assert data["status"] == 1
+
+
 def test_database(client):
     """initial test. ensure that the database exists"""
     tester = Path("test.db").is_file()
@@ -75,21 +86,3 @@ def test_messages(client):
     assert b"No entries here so far" not in rv.data
     assert b"&lt;Hello&gt;" in rv.data
     assert b"<strong>HTML</strong> allowed here" in rv.data
-
-def test_delete_message(client):
-    """Ensure the messages are being deleted"""
-    rv = client.get("/delete/1")
-    data = json.loads(rv.data)
-    assert data["status"] == 0
-    login(client, app.config["USERNAME"], app.config["PASSWORD"])
-    rv = client.get("/delete/1")
-    data = json.loads(rv.data)
-    assert data["status"] == 1
-
-@app.route('/search/', methods=['GET'])
-def search():
-    query = request.args.get("query")
-    entries = db.session.query(models.Post)
-    if query:
-        return render_template('search.html', entries=entries, query=query)
-    return render_template('search.html')
